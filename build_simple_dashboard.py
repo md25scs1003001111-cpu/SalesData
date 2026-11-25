@@ -31,7 +31,7 @@ def create_simple_dashboard():
         units=('quantity', 'sum'),
         sales=('item_revenue', 'sum'),
         profit=('profit', 'sum')
-    ).reset_index().sort_values(['year', 'month'])
+    ).reset_index().sort_values(['year', 'month']).reset_index(drop=True)
     monthly_summary['margin'] = monthly_summary['profit'] / monthly_summary['sales']
     monthly_summary['aov'] = monthly_summary['sales'] / monthly_summary['orders']
 
@@ -42,7 +42,7 @@ def create_simple_dashboard():
         units=('quantity', 'sum'),
         sales=('item_revenue', 'sum'),
         profit=('profit', 'sum')
-    ).reset_index().sort_values('sales', ascending=False)
+    ).reset_index().sort_values('sales', ascending=False).reset_index(drop=True)
     cat_summary['margin'] = cat_summary['profit'] / cat_summary['sales']
     cat_summary['share'] = cat_summary['sales'] / cat_summary['sales'].sum()
 
@@ -50,7 +50,7 @@ def create_simple_dashboard():
     pay_summary = payments.groupby('payment_method').agg(
         transactions=('payment_id', 'count'),
         amount=('amount_paid', 'sum')
-    ).reset_index().sort_values('amount', ascending=False)
+    ).reset_index().sort_values('amount', ascending=False).reset_index(drop=True)
     pay_summary['share'] = pay_summary['amount'] / pay_summary['amount'].sum()
 
     # 4. Top 10 Best Selling Products
@@ -58,14 +58,14 @@ def create_simple_dashboard():
         units=('quantity', 'sum'),
         sales=('item_revenue', 'sum'),
         profit=('profit', 'sum')
-    ).reset_index().sort_values('sales', ascending=False).head(10)
+    ).reset_index().sort_values('sales', ascending=False).head(10).reset_index(drop=True)
     top_prods['margin'] = top_prods['profit'] / top_prods['sales']
 
     # 5. Top 10 States
     state_summary = orders.groupby('delivery_state').agg(
         orders=('order_id', 'count'),
         sales=('subtotal', 'sum')
-    ).reset_index().sort_values('sales', ascending=False).head(10)
+    ).reset_index().sort_values('sales', ascending=False).head(10).reset_index(drop=True)
     state_summary['share'] = state_summary['sales'] / orders['subtotal'].sum()
 
     # 6. Annual Summary
@@ -73,7 +73,7 @@ def create_simple_dashboard():
         orders=('order_id', 'count'),
         sales=('subtotal', 'sum'),
         final_amt=('final_amount', 'sum')
-    ).reset_index()
+    ).reset_index().reset_index(drop=True)
     annual_profit = items_month.groupby('year')['profit'].sum().values
     annual_units = items_month.groupby('year')['quantity'].sum().values
     annual_summary['profit'] = annual_profit
@@ -407,7 +407,7 @@ def create_simple_dashboard():
     ws_dash.write('K41', "Margin %", f_th)
     ws_dash.merge_range('L41:M41', "Average Order Value", f_th)
 
-    for r_idx, row in annual_summary.iterrows():
+    for r_idx, (_, row) in enumerate(annual_summary.iterrows()):
         r_num = 42 + r_idx
         fmt_t = f_td_text_alt if r_idx % 2 == 1 else f_td_text
         fmt_n = f_td_num_alt if r_idx % 2 == 1 else f_td_num
@@ -451,59 +451,59 @@ def create_simple_dashboard():
     m_headers = ["Year-Month", "Year", "Month", "Sales (INR)", "Profit (INR)", "Orders Count"]
     for c, h in enumerate(m_headers):
         ws_data.write(5, c, h, f_th)
-    for r, row in monthly_summary.iterrows():
-        ws_data.write(6 + r, 0, row['year_month'], f_td_text)
-        ws_data.write(6 + r, 1, int(row['year']), f_td_num)
-        ws_data.write(6 + r, 2, int(row['month']), f_td_num)
-        ws_data.write(6 + r, 3, float(row['sales']), f_td_curr)
-        ws_data.write(6 + r, 4, float(row['profit']), f_td_curr)
-        ws_data.write(6 + r, 5, int(row['orders']), f_td_num)
+    for r_idx, (_, row) in enumerate(monthly_summary.iterrows()):
+        ws_data.write(6 + r_idx, 0, row['year_month'], f_td_text)
+        ws_data.write(6 + r_idx, 1, int(row['year']), f_td_num)
+        ws_data.write(6 + r_idx, 2, int(row['month']), f_td_num)
+        ws_data.write(6 + r_idx, 3, float(row['sales']), f_td_curr)
+        ws_data.write(6 + r_idx, 4, float(row['profit']), f_td_curr)
+        ws_data.write(6 + r_idx, 5, int(row['orders']), f_td_num)
 
     # Table 2: Category Master (Cols H to L)
     ws_data.merge_range('H5:L5', "TOP 10 CATEGORIES", f_th)
     c_headers = ["Category", "SKUs", "Sales (INR)", "Profit (INR)", "Margin %"]
     for c, h in enumerate(c_headers):
         ws_data.write(5, 7 + c, h, f_th)
-    for r, row in cat_summary.head(10).iterrows():
-        ws_data.write(6 + r, 7, row['category'], f_td_text)
-        ws_data.write(6 + r, 8, int(row['skus']), f_td_num)
-        ws_data.write(6 + r, 9, float(row['sales']), f_td_curr)
-        ws_data.write(6 + r, 10, float(row['profit']), f_td_curr)
-        ws_data.write(6 + r, 11, float(row['margin']), f_td_pct)
+    for r_idx, (_, row) in enumerate(cat_summary.head(10).iterrows()):
+        ws_data.write(6 + r_idx, 7, row['category'], f_td_text)
+        ws_data.write(6 + r_idx, 8, int(row['skus']), f_td_num)
+        ws_data.write(6 + r_idx, 9, float(row['sales']), f_td_curr)
+        ws_data.write(6 + r_idx, 10, float(row['profit']), f_td_curr)
+        ws_data.write(6 + r_idx, 11, float(row['margin']), f_td_pct)
 
     # Table 3: Payment Mode Master (Cols N to Q)
     ws_data.merge_range('N5:Q5', "PAYMENT INSTRUMENTS", f_th)
     p_headers = ["Payment Mode", "Transactions", "Amount Paid (INR)", "Share %"]
     for c, h in enumerate(p_headers):
         ws_data.write(5, 13 + c, h, f_th)
-    for r, row in pay_summary.head(6).iterrows():
-        ws_data.write(6 + r, 13, row['payment_method'], f_td_text)
-        ws_data.write(6 + r, 14, int(row['transactions']), f_td_num)
-        ws_data.write(6 + r, 15, float(row['amount']), f_td_curr)
-        ws_data.write(6 + r, 16, float(row['share']), f_td_pct)
+    for r_idx, (_, row) in enumerate(pay_summary.head(6).iterrows()):
+        ws_data.write(6 + r_idx, 13, row['payment_method'], f_td_text)
+        ws_data.write(6 + r_idx, 14, int(row['transactions']), f_td_num)
+        ws_data.write(6 + r_idx, 15, float(row['amount']), f_td_curr)
+        ws_data.write(6 + r_idx, 16, float(row['share']), f_td_pct)
 
     # Table 4: Top 10 Products (Cols S to W)
     ws_data.merge_range('S5:W5', "TOP 10 PRODUCTS", f_th)
     prod_headers = ["Product ID", "Product Name", "Category", "Sales (INR)", "Units Sold"]
     for c, h in enumerate(prod_headers):
         ws_data.write(5, 18 + c, h, f_th)
-    for r, row in top_prods.iterrows():
-        ws_data.write(6 + r, 18, row['product_id'], f_td_text)
-        ws_data.write(6 + r, 19, row['product_name'], f_td_text)
-        ws_data.write(6 + r, 20, row['category'], f_td_text)
-        ws_data.write(6 + r, 21, float(row['sales']), f_td_curr)
-        ws_data.write(6 + r, 22, int(row['units']), f_td_num)
+    for r_idx, (_, row) in enumerate(top_prods.iterrows()):
+        ws_data.write(6 + r_idx, 18, row['product_id'], f_td_text)
+        ws_data.write(6 + r_idx, 19, row['product_name'], f_td_text)
+        ws_data.write(6 + r_idx, 20, row['category'], f_td_text)
+        ws_data.write(6 + r_idx, 21, float(row['sales']), f_td_curr)
+        ws_data.write(6 + r_idx, 22, int(row['units']), f_td_num)
 
     # Table 5: Top 10 States (Cols X to AA)
     ws_data.merge_range('X5:AA5', "TOP 10 STATES", f_th)
     st_headers = ["State", "Orders", "Sales (INR)", "Share %"]
     for c, h in enumerate(st_headers):
         ws_data.write(5, 23 + c, h, f_th)
-    for r, row in state_summary.iterrows():
-        ws_data.write(6 + r, 23, row['delivery_state'], f_td_text)
-        ws_data.write(6 + r, 24, int(row['orders']), f_td_num)
-        ws_data.write(6 + r, 25, float(row['sales']), f_td_curr)
-        ws_data.write(6 + r, 26, float(row['share']), f_td_pct)
+    for r_idx, (_, row) in enumerate(state_summary.iterrows()):
+        ws_data.write(6 + r_idx, 23, row['delivery_state'], f_td_text)
+        ws_data.write(6 + r_idx, 24, int(row['orders']), f_td_num)
+        ws_data.write(6 + r_idx, 25, float(row['sales']), f_td_curr)
+        ws_data.write(6 + r_idx, 26, float(row['share']), f_td_pct)
 
     # ==========================================
     # SHEET 3: DATA DICTIONARY & KPIS
